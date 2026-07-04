@@ -166,7 +166,9 @@
     <div id="loginForm">
       <label for="email">Email</label>
       <input id="email" type="email" placeholder="you@vitalid.ai" autocomplete="email">
-      <button class="auth-btn" id="sendLink">Send me a sign-in link</button>
+      <label for="password" style="margin-top:14px">Password</label>
+      <input id="password" type="password" placeholder="Your password" autocomplete="current-password">
+      <button class="auth-btn" id="signIn">Sign in</button>
     </div>
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-foot">Access is limited to invited board members.</div>
@@ -269,31 +271,25 @@ async function initAuth(){
   const {data:{session}}=await sb.auth.getSession();
   route(session);
 }
-async function route(session){
+function route(session){
   if(!session){ showLogin(); return; }
-  // confirm the signed-in email is on the board allowlist
-  let allowed=true;
-  try{ const {data:ok}=await sb.rpc('is_board_member'); allowed=(ok===true); }catch(e){ allowed=true; }
-  if(!allowed){
-    showLogin();
-    authMsg('This account isn’t on the board access list. Ask Chris to add your email.','err');
-    try{ await sb.auth.signOut(); }catch(e){}
-    return;
-  }
   showApp(session.user&&session.user.email);
   load();
 }
-$('sendLink').addEventListener('click',async()=>{
+async function doSignIn(){
   const email=$('email').value.trim();
+  const password=$('password').value;
   if(!email||!/^[^@]+@[^@]+\.[^@]+$/.test(email)){authMsg('Enter a valid email address.','err');return;}
-  $('sendLink').disabled=true;authMsg('Sending…');
-  const redirect=location.href.split('#')[0];
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:redirect}});
-  $('sendLink').disabled=false;
-  if(error){authMsg(error.message||'Could not send the link.','err');return;}
-  authMsg('Check your email for a sign-in link from Supabase. Open it on this device.','ok');
-});
-$('email')&&$('email').addEventListener('keydown',e=>{if(e.key==='Enter')$('sendLink').click();});
+  if(!password){authMsg('Enter your password.','err');return;}
+  $('signIn').disabled=true;authMsg('Signing in…');
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  $('signIn').disabled=false;
+  if(error){authMsg(error.message||'Sign-in failed. Check your email and password.','err');return;}
+  authMsg('');
+}
+$('signIn').addEventListener('click',doSignIn);
+$('email')&&$('email').addEventListener('keydown',e=>{if(e.key==='Enter')$('password').focus();});
+$('password')&&$('password').addEventListener('keydown',e=>{if(e.key==='Enter')doSignIn();});
 
 /* ---------- data (supabase-js, uses the signed-in session token) ---------- */
 async function apiGet(){const {data:rows,error}=await sb.from('investors').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true});if(error)throw error;return rows||[];}
