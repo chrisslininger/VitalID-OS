@@ -152,7 +152,39 @@
   .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--violet);border-radius:50%;
     animation:sp .7s linear infinite;vertical-align:middle;margin-right:8px}
   @keyframes sp{to{transform:rotate(360deg)}}
-  @media(max-width:720px){.summary{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.wl-row{flex-wrap:wrap}}
+  .card{cursor:pointer}
+  .card .card-actions,.card .stage-row,.wl-row .wl-actions{cursor:default}
+  .detail-modal{max-width:620px}
+  .dh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+  .dh .dname{font-size:20px;font-weight:800;letter-spacing:-.3px}
+  .dh .dorg{font-size:13px;color:var(--cyan);font-weight:600;margin-top:1px}
+  .dmeta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 16px}
+  .dfacts{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;margin-bottom:18px}
+  .dfact .dl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);font-weight:700}
+  .dfact .dv{font-size:14px;font-weight:600;margin-top:1px;word-break:break-word}
+  .dfact.full{grid-column:1/-1}
+  .dfact .dv.terms{font-weight:500;white-space:pre-wrap;color:var(--muted)}
+  .notes-head{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);font-weight:700;
+    border-top:1px solid var(--line-soft);padding-top:16px;margin-bottom:10px}
+  .note-add{display:flex;gap:8px;margin-bottom:14px}
+  .note-add textarea{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    color:var(--text);font-family:inherit;font-size:13.5px;min-height:44px;resize:vertical}
+  .note-add textarea:focus{outline:none;border-color:var(--violet)}
+  .notes-list{display:flex;flex-direction:column;gap:9px;max-height:320px;overflow-y:auto}
+  .note{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:11px;padding:11px 13px}
+  .note-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+  .note-time{font-size:11px;color:var(--faint);font-weight:600}
+  .note-tools{display:flex;align-items:center;gap:8px}
+  .note-edit{background:none;border:none;color:var(--faint);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+  .note-edit:hover{color:var(--text)}
+  .note-x{background:none;border:none;color:var(--faint);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+  .note-x:hover{color:var(--warn)}
+  .note-body{font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .note-empty{font-size:13px;color:var(--faint);padding:8px 0}
+  .note-editbox{width:100%;background:var(--bg);border:1px solid var(--violet);border-radius:8px;padding:8px 10px;
+    color:var(--text);font-family:inherit;font-size:13.5px;min-height:40px;resize:vertical}
+  .note-editrow{display:flex;gap:7px;margin-top:7px;justify-content:flex-end}
+  @media(max-width:720px){.summary{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.wl-row{flex-wrap:wrap}.dfacts{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -195,6 +227,7 @@
     <button class="tab active" data-view="ff">Friends &amp; Family <span class="count" id="c-ff">0</span></button>
     <button class="tab" data-view="angel">Angel / Institutional <span class="count" id="c-angel">0</span></button>
     <button class="tab" data-view="wish">Wish List <span class="count" id="c-wish">0</span></button>
+    <button class="tab" data-view="contract">Contracts <span class="count" id="c-contract">0</span></button>
   </div>
   <div class="funnel" id="funnel"></div>
   <div class="panel-head">
@@ -239,8 +272,17 @@
     </div>
     <div class="field cond hidden" id="cond-wishround"><label>Wish list target</label><select id="f-wishround">
       <option value="ff">Friends &amp; Family prospect</option><option value="angel">Angel / Institutional prospect</option></select></div>
-    <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Status, last conversation, next step…"></textarea></div>
+    <div class="field cond hidden" id="cond-contract"><label>Contract terms (optional)</label><textarea id="f-contract" placeholder="Tentative terms — add as they develop"></textarea></div>
+    <div class="field"><label>Summary note (optional)</label><textarea id="f-notes" placeholder="One-line status — the running log lives on the card detail"></textarea></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="cancelBtn">Cancel</button><button class="btn btn-primary" id="saveBtn">Save contact</button></div>
+  </div>
+</div>
+
+<!-- Detail popup -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal detail-modal">
+    <button class="close-x" id="detailClose">&times;</button>
+    <div id="detailBody"></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -293,7 +335,7 @@ $('password')&&$('password').addEventListener('keydown',e=>{if(e.key==='Enter')d
 
 /* ---------- data (supabase-js, uses the signed-in session token) ---------- */
 async function apiGet(){const {data:rows,error}=await sb.from('investors').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true});if(error)throw error;return rows||[];}
-function recToRow(r){return {view:r.view,name:r.name,org:r.org,primary_contact:r.primary_contact,email:r.email,phone:r.phone,address:r.address,round:r.round,structure:r.structure,amount:r.amount,cap:r.cap,pct:r.pct,discount:r.discount,wishround:r.wishround,stage:r.stage,notes:r.notes,sort_order:r.sort_order};}
+function recToRow(r){return {view:r.view,name:r.name,org:r.org,primary_contact:r.primary_contact,email:r.email,phone:r.phone,address:r.address,round:r.round,structure:r.structure,amount:r.amount,cap:r.cap,pct:r.pct,discount:r.discount,wishround:r.wishround,stage:r.stage,notes:r.notes,contract_terms:r.contract_terms,sort_order:r.sort_order};}
 
 async function load(){
   $('content').innerHTML='<div class="empty"><div class="big"><span class="spin"></span>Loading contacts…</div></div>';
@@ -304,15 +346,15 @@ async function load(){
 
 /* ---------- render ---------- */
 function render(){
-  const ff=data.filter(d=>d.view==='ff'),ang=data.filter(d=>d.view==='angel'),wish=data.filter(d=>d.view==='wish');
-  $('c-ff').textContent=ff.length;$('c-angel').textContent=ang.length;$('c-wish').textContent=wish.length;
+  const ff=data.filter(d=>d.view==='ff'),ang=data.filter(d=>d.view==='angel'),wish=data.filter(d=>d.view==='wish'),contract=data.filter(d=>d.view==='contract');
+  $('c-ff').textContent=ff.length;$('c-angel').textContent=ang.length;$('c-wish').textContent=wish.length;$('c-contract').textContent=contract.length;
   const sum=a=>a.reduce((x,d)=>x+(Number(d.amount)||0),0);const ffT=sum(ff),angT=sum(ang);
   $('summary').innerHTML=`
     <div class="stat"><div class="k">F&amp;F Leads</div><div class="v">${ff.length}</div><div class="cap">${money(ffT)||'$0'} in play</div></div>
     <div class="stat"><div class="k">Angel / Inst.</div><div class="v">${ang.length}</div><div class="cap">${money(angT)||'$0'} in play</div></div>
     <div class="stat"><div class="k">Wish List</div><div class="v">${wish.length}</div><div class="cap">Target prospects</div></div>
     <div class="stat"><div class="k">Combined Pipeline</div><div class="v grad">${money(ffT+angT)||'$0'}</div><div class="cap">Considered, not committed</div></div>`;
-  const titles={ff:['Friends &amp; Family','Active leads for the friends-and-family raise.'],angel:['Angel / Institutional','Institutional groups and angels in conversation.'],wish:['Wish List','Target prospects to reach out to.']};
+  const titles={ff:['Friends &amp; Family','Active leads for the friends-and-family raise.'],angel:['Angel / Institutional','Institutional groups and angels in conversation.'],wish:['Wish List','Target prospects to reach out to.'],contract:['Contracts','Organizations and deals in contracting.']};
   $('panelTitle').innerHTML=titles[currentView][0];$('panelDesc').innerHTML=titles[currentView][1];
   renderFunnel();
   const box=$('content'),list=data.filter(d=>d.view===currentView);
@@ -327,8 +369,10 @@ function renderFunnel(){
 }
 function emptyBlock(){return `<div class="empty"><div class="big">No contacts yet</div>Click “Add contact” to start building this list.</div>`;}
 function stageSelect(d){const cls=d.stage?('s-'+d.stage):'';const opts=['<option value="">— Set stage —</option>'].concat(STAGES.map(s=>`<option value="${s.v}" ${d.stage===s.v?'selected':''}>${s.label}</option>`)).join('');
-  return `<div class="stage-row"><span class="sl">Stage</span><select class="stage-select ${cls}" onchange="quickStage('${d.id}',this.value)">${opts}</select></div>`;}
+  return `<div class="stage-row" onclick="event.stopPropagation()"><span class="sl">Stage</span><select class="stage-select ${cls}" onchange="quickStage('${d.id}',this.value)">${opts}</select></div>`;}
+function actionsHtml(d){return `<div class="card-actions" onclick="event.stopPropagation()"><button class="mini" onclick="edit('${d.id}')">Edit</button><button class="mini del" onclick="del('${d.id}')">Delete</button></div>`;}
 function card(d){
+  if(d.view==='contract') return contractCard(d);
   const rc=d.round==='angel'?'angel':'ff';const rLabel=d.round==='angel'?'Angel':'F&amp;F';
   const structPill=d.round==='ff'&&d.structure?`<span class="pill ${d.structure==='spv'?'spv':'solo'}">${d.structure==='spv'?'SPV':'Solo'}</span>`:'';
   const contactBits=[d.email,d.phone].filter(Boolean).map(esc).join(' · ');
@@ -339,18 +383,28 @@ function card(d){
   const termsHtml=terms.length?`<div class="terms">${terms.map(t=>`<div class="term"><div class="tl">${t[0]}</div><div class="tv">${esc(t[1])}</div></div>`).join('')}</div>`:'';
   const amt=(d.amount!=null&&d.amount!=='')?`<span class="amt ${rc}">${money(d.amount)}</span><span class="amt-label">considered</span>`:`<span class="amt none">Amount TBD</span>`;
   const notes=d.notes?`<div class="contact-line" style="margin-top:12px;color:var(--muted)">${esc(d.notes)}</div>`:'';
-  return `<div class="card"><div class="row1"><div style="min-width:0"><div class="name">${esc(d.name)}</div>${orgLine}${primLine}${contactLine}</div>
+  return `<div class="card" onclick="openDetail('${d.id}')"><div class="row1"><div style="min-width:0"><div class="name">${esc(d.name)}</div>${orgLine}${primLine}${contactLine}</div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span class="pill ${rc}">${rLabel}</span>${structPill}</div></div>
-    <div class="amt-row">${amt}</div>${stageSelect(d)}${termsHtml}${notes}
-    <div class="card-actions"><button class="mini" onclick="edit('${d.id}')">Edit</button><button class="mini del" onclick="del('${d.id}')">Delete</button></div></div>`;
+    <div class="amt-row">${amt}</div>${stageSelect(d)}${termsHtml}${notes}${actionsHtml(d)}</div>`;
+}
+function contractCard(d){
+  const org=d.org?`<div class="org">${esc(d.org)}</div>`:'';
+  const primLine=(d.primary_contact&&d.primary_contact!==d.name)?`<div class="contact-line">Contact: ${esc(d.primary_contact)}</div>`:'';
+  const contactBits=[d.email,d.phone].filter(Boolean).map(esc).join(' · ');
+  const contactLine=contactBits?`<div class="contact-line">${contactBits}</div>`:'';
+  const termsBlock=d.contract_terms?`<div class="amt-row" style="display:block"><div class="amt-label" style="margin-bottom:5px">Tentative terms</div><div style="font-size:13.5px;color:var(--text);white-space:pre-wrap">${esc(d.contract_terms)}</div></div>`:`<div class="amt-row"><span class="amt none">Terms TBD</span></div>`;
+  const notes=d.notes?`<div class="contact-line" style="margin-top:12px;color:var(--muted)">${esc(d.notes)}</div>`:'';
+  return `<div class="card" onclick="openDetail('${d.id}')"><div class="row1"><div style="min-width:0"><div class="name">${esc(d.name)}</div>${org}${primLine}${contactLine}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span class="pill spv">Contract</span></div></div>
+    ${termsBlock}${stageSelect(d)}${notes}${actionsHtml(d)}</div>`;
 }
 function renderWish(list){
   if(!list.length)return `<div class="cards">${emptyBlock()}</div>`;
   return `<div class="wl-list">${list.map(d=>{const tgt=d.wishround==='angel'?'angel':'ff';const tLabel=d.wishround==='angel'?'Angel':'F&amp;F';
     const org=d.org?`<span class="wl-org">${esc(d.org)}</span>`:'';const cls=d.stage?('s-'+d.stage):'';
     const opts=['<option value="">— Set stage —</option>'].concat(STAGES.map(s=>`<option value="${s.v}" ${d.stage===s.v?'selected':''}>${s.label}</option>`)).join('');
-    return `<div class="wl-row"><div class="wl-name">${esc(d.name)}${org}</div><span class="pill ${tgt}">${tLabel} target</span>
-      <div class="wl-note">${esc(d.notes||'')}</div><div class="wl-actions">
+    return `<div class="wl-row" onclick="openDetail('${d.id}')"><div class="wl-name">${esc(d.name)}${org}</div><span class="pill ${tgt}">${tLabel} target</span>
+      <div class="wl-note">${esc(d.notes||'')}</div><div class="wl-actions" onclick="event.stopPropagation()">
       <select class="stage-select ${cls}" onchange="quickStage('${d.id}',this.value)">${opts}</select>
       <button class="mini" onclick="edit('${d.id}')">Edit</button><button class="mini del" onclick="del('${d.id}')">Delete</button></div></div>`;}).join('')}</div>`;
 }
@@ -374,9 +428,14 @@ function openModal(view,rec){
   $('f-amount').value=rec&&rec.amount!=null?rec.amount:'';$('f-cap').value=rec&&rec.cap!=null?rec.cap:'';
   $('f-pct').value=rec&&rec.pct!=null?rec.pct:'';$('f-discount').value=rec&&rec.discount!=null?rec.discount:'';
   $('f-wishround').value=rec?(rec.wishround||'ff'):'ff';$('f-notes').value=rec?(rec.notes||''):'';
+  $('f-contract').value=rec?(rec.contract_terms||''):'';
   toggleRoundFields();$('overlay').classList.add('show');
 }
-function toggleRoundFields(){const isWish=$('f-view').value==='wish';const round=$('f-round').value;$('cond-structure').classList.toggle('hidden',isWish||round!=='ff');}
+function toggleRoundFields(){
+  const view=$('f-view').value;const isWish=view==='wish';const isContract=view==='contract';const round=$('f-round').value;
+  $('cond-structure').classList.toggle('hidden',isWish||isContract||round!=='ff');
+  $('cond-contract').classList.toggle('hidden',!isContract);
+}
 $('f-round').addEventListener('change',toggleRoundFields);
 function closeModal(){$('overlay').classList.remove('show')}
 $('addBtn').addEventListener('click',()=>openModal(currentView,null));
@@ -388,13 +447,100 @@ window.del=async id=>{const rec=data.find(d=>d.id===id);if(!confirm(`Delete ${re
   const {error}=await sb.from('investors').delete().eq('id',id);if(error){toast('Delete failed: '+error.message,true);return;}
   data=data.filter(d=>d.id!==id);render();toast('Contact deleted');};
 
+/* ---------- notes data (supabase-js) ---------- */
+async function notesLoad(id){const {data,error}=await sb.from('investor_notes').select('*').eq('investor_id',id).order('created_at',{ascending:false});if(error)throw error;return data||[];}
+async function notesAdd(id,body){const {data,error}=await sb.from('investor_notes').insert({investor_id:id,body}).select().single();if(error)throw error;return data;}
+async function notesDelete(nid){const {error}=await sb.from('investor_notes').delete().eq('id',nid);if(error)throw error;}
+async function notesEdit(nid,body){const {data,error}=await sb.from('investor_notes').update({body}).eq('id',nid).select().single();if(error)throw error;return data;}
+
+/* ---------- detail popup + running notes (shared UI) ---------- */
+let detailId=null, detailNotes=[];
+function fmtTime(ts){try{return new Date(ts).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return String(ts);}}
+function fact(label,val,full){return val!=null&&val!==''?`<div class="dfact ${full?'full':''}"><div class="dl">${label}</div><div class="dv">${esc(val)}</div></div>`:'';}
+function detailInfoHtml(d){
+  const viewLabel={ff:'Friends & Family',angel:'Angel / Institutional',wish:'Wish List',contract:'Contract'}[d.view]||d.view;
+  const facts=[
+    fact('List',viewLabel),
+    d.view==='wish'?fact('Target',d.wishround==='angel'?'Angel':'F&F'):(d.view!=='contract'?fact('Round',d.round==='angel'?'Angel / Institutional':'Friends & Family'):''),
+    d.stage?fact('Stage',stageLabel(d.stage)):'',
+    d.view==='ff'&&d.structure?fact('Structure',d.structure==='spv'?'SPV':'Solo'):'',
+    (d.amount!=null&&d.amount!=='')?fact('Considered amount',money(d.amount)):'',
+    (d.cap!=null&&d.cap!=='')?fact('Cap',money(d.cap)):'',
+    (d.pct!=null&&d.pct!=='')?fact('Ownership',d.pct+'%'):'',
+    (d.discount!=null&&d.discount!=='')?fact('Discount',d.discount+'%'):'',
+    fact('Primary contact',d.primary_contact),fact('Email',d.email),fact('Phone',d.phone),fact('Address',d.address,true),
+  ].filter(Boolean).join('');
+  const terms=d.contract_terms?`<div class="dfact full"><div class="dl">Contract terms</div><div class="dv terms">${esc(d.contract_terms)}</div></div>`:'';
+  const sumNote=d.notes?`<div class="dfact full"><div class="dl">Summary note</div><div class="dv terms">${esc(d.notes)}</div></div>`:'';
+  const pill=d.view==='contract'?'<span class="pill spv">Contract</span>':(d.round==='angel'?'<span class="pill angel">Angel</span>':'<span class="pill ff">F&amp;F</span>');
+  return `<div class="dh"><div><div class="dname">${esc(d.name)}</div>${d.org?`<div class="dorg">${esc(d.org)}</div>`:''}</div><div>${pill}</div></div>
+    <div class="dmeta"><button class="mini" onclick="edit('${d.id}');closeDetail();">Edit details</button></div>
+    <div class="dfacts">${facts}${terms}${sumNote}</div>`;
+}
+function notesSectionHtml(){
+  return `<div class="notes-head">Running notes — newest first</div>
+    <div class="note-add"><textarea id="noteInput" placeholder="Add a note… (meeting recap, update, next step)"></textarea>
+      <button class="btn btn-primary" id="noteAddBtn">Add</button></div>
+    <div class="notes-list" id="notesList"></div>`;
+}
+async function openDetail(id){
+  const d=data.find(x=>x.id===id);if(!d)return;
+  detailId=id;detailNotes=[];
+  $('detailBody').innerHTML=detailInfoHtml(d)+notesSectionHtml();
+  $('detailOverlay').classList.add('show');
+  $('notesList').innerHTML='<div class="note-empty"><span class="spin"></span> loading notes…</div>';
+  $('noteAddBtn').addEventListener('click',submitNote);
+  try{ detailNotes=await notesLoad(id); }catch(e){ $('notesList').innerHTML='<div class="note-empty">Could not load notes: '+esc(e.message||e)+'</div>'; return; }
+  renderNotes();
+}
+window.openDetail=openDetail;
+function closeDetail(){$('detailOverlay').classList.remove('show');detailId=null;}
+window.closeDetail=closeDetail;
+$('detailClose').addEventListener('click',closeDetail);
+$('detailOverlay').addEventListener('click',e=>{if(e.target===$('detailOverlay'))closeDetail();});
+function renderNotes(){
+  const box=$('notesList');if(!box)return;
+  if(!detailNotes.length){box.innerHTML='<div class="note-empty">No notes yet. Add the first one above.</div>';return;}
+  box.innerHTML=detailNotes.map(n=>`<div class="note" data-id="${n.id}">
+    <div class="note-top"><span class="note-time">${fmtTime(n.created_at)}</span>
+      <span class="note-tools"><button class="note-edit" onclick="editNote('${n.id}')">Edit</button>
+      <button class="note-x" title="Delete note" onclick="removeNote('${n.id}')">&times;</button></span></div>
+    <div class="note-body">${esc(n.body)}</div></div>`).join('');
+}
+window.renderNotes=renderNotes;
+async function submitNote(){
+  const inp=$('noteInput');const body=inp.value.trim();if(!body)return;
+  const btn=$('noteAddBtn');btn.disabled=true;
+  try{ const row=await notesAdd(detailId,body); detailNotes.unshift(row); inp.value=''; renderNotes(); }
+  catch(e){ toast('Could not add note: '+(e.message||e),true); }
+  btn.disabled=false;
+}
+window.removeNote=async(nid)=>{
+  if(!confirm('Delete this note? This can’t be undone.'))return;
+  try{ await notesDelete(nid); detailNotes=detailNotes.filter(n=>n.id!==nid); renderNotes(); toast('Note deleted'); }
+  catch(e){ toast('Delete failed: '+(e.message||e),true); }
+};
+window.editNote=(nid)=>{
+  const n=detailNotes.find(x=>x.id===nid);if(!n)return;
+  const el=document.querySelector(`.note[data-id="${nid}"] .note-body`);if(!el)return;
+  el.innerHTML=`<textarea class="note-editbox" id="edit-${nid}"></textarea>
+    <div class="note-editrow"><button class="mini" onclick="renderNotes()">Cancel</button>
+    <button class="mini" onclick="saveNote('${nid}')">Save</button></div>`;
+  const t=document.getElementById('edit-'+nid);if(t){t.value=n.body;t.focus();}
+};
+window.saveNote=async(nid)=>{
+  const t=document.getElementById('edit-'+nid);if(!t)return;const body=t.value.trim();if(!body){toast('Note can’t be empty',true);return;}
+  try{ const row=await notesEdit(nid,body); const i=detailNotes.findIndex(n=>n.id===nid); if(i>=0)detailNotes[i]=row; renderNotes(); toast('Note updated'); }
+  catch(e){ toast('Save failed: '+(e.message||e),true); }
+};
+
 $('saveBtn').addEventListener('click',async()=>{
   const name=$('f-name').value.trim();if(!name){$('f-name').focus();$('f-name').style.borderColor='var(--warn)';return;}
   const view=$('f-view').value,id=$('f-id').value;
   const rec={view,name,org:$('f-org').value.trim(),primary_contact:$('f-primary').value.trim(),email:$('f-email').value.trim(),
     phone:$('f-phone').value.trim(),address:$('f-address').value.trim(),round:$('f-round').value,structure:$('f-structure').value,
     amount:numify($('f-amount').value),cap:numify($('f-cap').value),pct:numify($('f-pct').value),discount:numify($('f-discount').value),
-    wishround:$('f-wishround').value,stage:$('f-stage').value||null,notes:$('f-notes').value.trim()};
+    wishround:$('f-wishround').value,stage:$('f-stage').value||null,notes:$('f-notes').value.trim(),contract_terms:$('f-contract').value.trim()};
   const btn=$('saveBtn');btn.disabled=true;
   try{
     if(id){const cur=data.find(d=>d.id===id)||{};const {data:row,error}=await sb.from('investors').update(recToRow({...rec,sort_order:cur.sort_order||0})).eq('id',id).select().single();
