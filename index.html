@@ -184,6 +184,15 @@
   .note-editbox{width:100%;background:var(--bg);border:1px solid var(--violet);border-radius:8px;padding:8px 10px;
     color:var(--text);font-family:inherit;font-size:13.5px;min-height:40px;resize:vertical}
   .note-editrow{display:flex;gap:7px;margin-top:7px;justify-content:flex-end}
+  .doc-add{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+  .doc-input{flex:1;font-size:12.5px;color:var(--muted)}
+  .docs-list{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+  .doc{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:9px;padding:8px 11px}
+  .doc-name{color:var(--cyan);font-size:13px;font-weight:600;text-decoration:none;word-break:break-all;cursor:pointer}
+  .doc-name:hover{text-decoration:underline}
+  .doc-tools{display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .doc-date{font-size:11px;color:var(--faint)}
+  .doc-webbtn{display:inline-flex;text-decoration:none;margin-bottom:12px}
   @media(max-width:720px){.summary{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.wl-row{flex-wrap:wrap}.dfacts{grid-template-columns:1fr}}
 </style>
 </head>
@@ -244,7 +253,7 @@
     <h2 id="modalTitle">Add contact</h2>
     <div class="msub">Fill in what you have — everything is optional except name.</div>
     <input type="hidden" id="f-id"><input type="hidden" id="f-view">
-    <div class="field"><label>Name</label><input id="f-name" placeholder="e.g. Jim LaBate"></div>
+    <div class="field"><label id="lbl-name">Name</label><input id="f-name" placeholder="e.g. Jim LaBate"></div>
     <div class="grid2">
       <div class="field"><label>Organization / Firm</label><input id="f-org" placeholder="Optional"></div>
       <div class="field"><label>Primary contact</label><input id="f-primary" placeholder="If different from name"></div>
@@ -254,7 +263,7 @@
       <div class="field"><label>Phone</label><input id="f-phone" placeholder="Optional"></div>
       <div class="field"><label>Address</label><input id="f-address" placeholder="Optional"></div>
     </div>
-    <div class="grid2">
+    <div class="grid2 cond" id="grp-round">
       <div class="field"><label>Round</label><select id="f-round"><option value="ff">Friends &amp; Family</option><option value="angel">Angel / Institutional</option></select></div>
       <div class="field"><label>Stage</label><select id="f-stage">
         <option value="">— Not set —</option><option value="contacted">Contacted</option><option value="interested">Interested</option>
@@ -262,11 +271,11 @@
     </div>
     <div class="field cond" id="cond-structure"><label>Structure</label><select id="f-structure">
       <option value="">— Not decided —</option><option value="spv">SPV (single-purpose vehicle)</option><option value="solo">Solo / direct</option></select></div>
-    <div class="grid2">
+    <div class="grid2 cond" id="grp-invest1">
       <div class="field"><label>Considered amount ($)</label><input id="f-amount" placeholder="e.g. 25000" inputmode="numeric"></div>
       <div class="field"><label>Cap ($)</label><input id="f-cap" placeholder="e.g. 4000000" inputmode="numeric"></div>
     </div>
-    <div class="grid2">
+    <div class="grid2 cond" id="grp-invest2">
       <div class="field"><label>Ownership (%)</label><input id="f-pct" placeholder="e.g. 2.5"></div>
       <div class="field"><label>Discount (%)</label><input id="f-discount" placeholder="e.g. 15"></div>
     </div>
@@ -342,6 +351,8 @@ async function load(){
   try{ data=await apiGet(); }
   catch(e){ data=[]; $('content').innerHTML='<div class="empty"><div class="big" style="color:var(--warn)">Couldn’t load data</div>'+esc(e.message||e)+'</div>'; return; }
   render();
+  const m=(location.hash||'').match(/c=([0-9a-fA-F-]{36})/);
+  if(m){const t=data.find(x=>x.id===m[1]);if(t){currentView=t.view;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===t.view));render();openDetail(m[1]);}}
 }
 
 /* ---------- render ---------- */
@@ -418,8 +429,10 @@ window.quickStage=async(id,val)=>{
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');currentView=t.dataset.view;render();}));
 
 function openModal(view,rec){
-  $('f-view').value=view;$('modalTitle').textContent=rec?'Edit contact':'Add contact';
+  $('f-view').value=view;$('modalTitle').textContent=rec?(view==='contract'?'Edit contract':'Edit contact'):(view==='contract'?'Add contract':'Add contact');
   $('cond-wishround').classList.toggle('hidden',view!=='wish');
+  $('lbl-name').textContent=view==='contract'?'Organization (or name)':'Name';
+  $('f-name').placeholder=view==='contract'?'e.g. Acme Health Systems':'e.g. Jim LaBate';
   $('f-id').value=rec?rec.id:'';$('f-name').value=rec?rec.name:'';$('f-name').style.borderColor='';
   $('f-org').value=rec?(rec.org||''):'';$('f-primary').value=rec?(rec.primary_contact||''):'';
   $('f-email').value=rec?(rec.email||''):'';$('f-phone').value=rec?(rec.phone||''):'';$('f-address').value=rec?(rec.address||''):'';
@@ -433,6 +446,9 @@ function openModal(view,rec){
 }
 function toggleRoundFields(){
   const view=$('f-view').value;const isWish=view==='wish';const isContract=view==='contract';const round=$('f-round').value;
+  $('grp-round').classList.toggle('hidden',isContract);
+  $('grp-invest1').classList.toggle('hidden',isContract);
+  $('grp-invest2').classList.toggle('hidden',isContract);
   $('cond-structure').classList.toggle('hidden',isWish||isContract||round!=='ff');
   $('cond-contract').classList.toggle('hidden',!isContract);
 }
@@ -454,7 +470,7 @@ async function notesDelete(nid){const {error}=await sb.from('investor_notes').de
 async function notesEdit(nid,body){const {data,error}=await sb.from('investor_notes').update({body}).eq('id',nid).select().single();if(error)throw error;return data;}
 
 /* ---------- detail popup + running notes (shared UI) ---------- */
-let detailId=null, detailNotes=[];
+let detailId=null, detailNotes=[], detailDocs=[];
 function fmtTime(ts){try{return new Date(ts).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return String(ts);}}
 function fact(label,val,full){return val!=null&&val!==''?`<div class="dfact ${full?'full':''}"><div class="dl">${label}</div><div class="dv">${esc(val)}</div></div>`:'';}
 function detailInfoHtml(d){
@@ -483,16 +499,58 @@ function notesSectionHtml(){
       <button class="btn btn-primary" id="noteAddBtn">Add</button></div>
     <div class="notes-list" id="notesList"></div>`;
 }
+function documentsSectionHtml(){
+  return `<div class="notes-head">Documents</div>
+    <div class="doc-add"><input type="file" id="docInput" class="doc-input"><button class="btn btn-primary" id="docUploadBtn">Upload</button></div>
+    <div class="docs-list" id="docsList"></div>`;
+}
 async function openDetail(id){
   const d=data.find(x=>x.id===id);if(!d)return;
-  detailId=id;detailNotes=[];
-  $('detailBody').innerHTML=detailInfoHtml(d)+notesSectionHtml();
+  detailId=id;detailNotes=[];detailDocs=[];
+  $('detailBody').innerHTML=detailInfoHtml(d)+documentsSectionHtml()+notesSectionHtml();
   $('detailOverlay').classList.add('show');
-  $('notesList').innerHTML='<div class="note-empty"><span class="spin"></span> loading notes…</div>';
   $('noteAddBtn').addEventListener('click',submitNote);
-  try{ detailNotes=await notesLoad(id); }catch(e){ $('notesList').innerHTML='<div class="note-empty">Could not load notes: '+esc(e.message||e)+'</div>'; return; }
-  renderNotes();
+  $('docUploadBtn').addEventListener('click',doUpload);
+  $('notesList').innerHTML='<div class="note-empty"><span class="spin"></span> loading…</div>';
+  $('docsList').innerHTML='<div class="note-empty">loading…</div>';
+  try{ detailNotes=await notesLoad(id); renderNotes(); }catch(e){ $('notesList').innerHTML='<div class="note-empty">Could not load notes.</div>'; }
+  try{ detailDocs=await docsLoad(id); renderDocs(); }catch(e){ $('docsList').innerHTML='<div class="note-empty">Could not load documents.</div>'; }
 }
+async function docsLoad(id){const {data,error}=await sb.from('investor_documents').select('*').eq('investor_id',id).order('created_at',{ascending:false});if(error)throw error;return data||[];}
+function renderDocs(){
+  const box=$('docsList');if(!box)return;
+  if(!detailDocs.length){box.innerHTML='<div class="note-empty">No documents yet. Upload contract drafts or files above.</div>';return;}
+  box.innerHTML=detailDocs.map(d=>`<div class="doc" data-id="${d.id}">
+    <span class="doc-name" onclick="openDoc('${d.id}')">${esc(d.name)}</span>
+    <span class="doc-tools"><span class="doc-date">${fmtTime(d.created_at)}</span>
+    <button class="note-x" title="Delete document" onclick="removeDoc('${d.id}')">&times;</button></span></div>`).join('');
+}
+async function doUpload(){
+  const inp=$('docInput');const f=inp&&inp.files&&inp.files[0];if(!f){toast('Choose a file first',true);return;}
+  const btn=$('docUploadBtn');btn.disabled=true;
+  const safe=f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path=detailId+'/'+Date.now()+'-'+safe;
+  try{
+    const up=await sb.storage.from('documents').upload(path,f,{upsert:false});
+    if(up.error)throw up.error;
+    const {data:row,error}=await sb.from('investor_documents').insert({investor_id:detailId,name:f.name,path,size:f.size}).select().single();
+    if(error)throw error;
+    detailDocs.unshift(row);renderDocs();inp.value='';toast('Document uploaded');
+  }catch(e){toast('Upload failed: '+(e.message||e),true);}
+  btn.disabled=false;
+}
+window.openDoc=async(did)=>{
+  const doc=detailDocs.find(x=>x.id===did);if(!doc)return;
+  try{const {data:s,error}=await sb.storage.from('documents').createSignedUrl(doc.path,120);if(error)throw error;window.open(s.signedUrl,'_blank');}
+  catch(e){toast('Could not open: '+(e.message||e),true);}
+};
+window.removeDoc=async(did)=>{
+  const doc=detailDocs.find(x=>x.id===did);if(!doc)return;
+  if(!confirm('Delete this document? This can’t be undone.'))return;
+  try{await sb.storage.from('documents').remove([doc.path]);await sb.from('investor_documents').delete().eq('id',did);
+    detailDocs=detailDocs.filter(x=>x.id!==did);renderDocs();toast('Document deleted');}
+  catch(e){toast('Delete failed: '+(e.message||e),true);}
+};
 window.openDetail=openDetail;
 function closeDetail(){$('detailOverlay').classList.remove('show');detailId=null;}
 window.closeDetail=closeDetail;
