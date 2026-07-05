@@ -896,16 +896,19 @@ async function openDetail(id){
   const d=data.find(x=>x.id===id);if(!d)return;
   detailId=id;detailNotes=[];detailDocs=[];detailTasks=[];detailContacts=[];
   const isGov=d.view==='govcontract';
-  $('detailBody').innerHTML=detailInfoHtml(d)+(isGov?contactsSectionHtml():'')+tasksSectionHtml()+documentsSectionHtml()+notesSectionHtml();
+  const hasTasks=d.view==='govcontract'||d.view==='contract';
+  $('detailBody').innerHTML=detailInfoHtml(d)+(isGov?contactsSectionHtml():'')+(hasTasks?tasksSectionHtml():'')+documentsSectionHtml()+notesSectionHtml();
   $('detailOverlay').classList.add('show');
   $('noteAddBtn').addEventListener('click',submitNote);
   $('docUploadBtn').addEventListener('click',doUpload);
-  $('taskAddBtn').addEventListener('click',submitTask);
+  if(hasTasks)$('taskAddBtn').addEventListener('click',submitTask);
   if(isGov)$('rcAddBtn').addEventListener('click',submitContact);
   $('notesList').innerHTML='<div class="note-empty"><span class="spin"></span> loading…</div>';
   $('docsList').innerHTML='<div class="note-empty">loading…</div>';
-  $('tasksList').innerHTML='<div class="note-empty">loading…</div>';
-  try{ detailTasks=await tasksLoad(id); renderDetailTasks(); }catch(e){ $('tasksList').innerHTML='<div class="note-empty">Could not load tasks.</div>'; }
+  if(hasTasks){
+    $('tasksList').innerHTML='<div class="note-empty">loading…</div>';
+    try{ detailTasks=await tasksLoad(id); renderDetailTasks(); }catch(e){ $('tasksList').innerHTML='<div class="note-empty">Could not load tasks.</div>'; }
+  }
   if(isGov){ try{ detailContacts=await rcLoad(id); renderDetailContacts(); }catch(e){ $('rcList').innerHTML='<div class="note-empty">Could not load contacts.</div>'; } }
   try{ detailNotes=await notesLoad(id); renderNotes(); }catch(e){ $('notesList').innerHTML='<div class="note-empty">Could not load notes.</div>'; }
   try{ detailDocs=await docsLoad(id); renderDocs(); }catch(e){ $('docsList').innerHTML='<div class="note-empty">Could not load documents.</div>'; }
