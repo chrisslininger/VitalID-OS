@@ -109,7 +109,7 @@
   .fchip .dot{width:8px;height:8px;border-radius:50%}
   .fchip .fc{font-weight:800;color:var(--text)}
   .dot.contacted{background:#9a9ab5}.dot.interested{background:var(--violet)}.dot.soft_circled{background:var(--cyan)}
-  .dot.committed{background:var(--ff-amt)}.dot.passed{background:var(--warn)}.dot.none{background:var(--faint)}
+  .dot.committed{background:var(--ff-amt)}.dot.passed{background:var(--warn)}.dot.revisit{background:var(--gold)}.dot.none{background:var(--faint)}
 
   .panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
   .panel-head .title{font-size:16px;font-weight:700;letter-spacing:-.2px}
@@ -145,6 +145,7 @@
   .stage-select.s-soft_circled{border-color:rgba(34,211,238,.55);color:#7fe6f5}
   .stage-select.s-committed{border-color:rgba(52,211,153,.6);color:#5fe0b0}
   .stage-select.s-passed{border-color:rgba(248,113,113,.5);color:#f8a1a1}
+  .stage-select.s-revisit{border-color:rgba(245,197,99,.5);color:var(--gold)}
   .terms{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
   .term{background:rgba(255,255,255,.035);border:1px solid var(--line-soft);border-radius:9px;padding:6px 10px;min-width:64px}
   .term .tl{font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);font-weight:600}
@@ -227,6 +228,24 @@
   .doc-tools{display:flex;align-items:center;gap:9px;flex-shrink:0}
   .doc-date{font-size:11px;color:var(--faint)}
   .doc-webbtn{display:inline-flex;text-decoration:none;margin-bottom:12px}
+  .task-add,.rc-add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .task-input{flex:1;min-width:140px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--text);font-family:inherit;font-size:13px}
+  .task-sel,.task-date{background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 10px;color:var(--text);font-family:inherit;font-size:13px}
+  .tasks-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+  .task{display:flex;align-items:flex-start;gap:10px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:10px;padding:10px 12px}
+  .task.is-done{opacity:.55}
+  .task.is-done .task-title{text-decoration:line-through;color:var(--muted)}
+  .task-chk{margin-top:2px;width:16px;height:16px;accent-color:var(--violet);cursor:pointer;flex-shrink:0}
+  .task-main{flex:1;min-width:0}
+  .task-title{font-size:13.5px;font-weight:600;word-break:break-word}
+  .task-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;font-size:11px}
+  .task-who{color:var(--cyan);font-weight:600}.task-due{color:var(--muted)}.task-due.overdue{color:var(--warn);font-weight:700}.task-done{color:var(--ff-amt)}
+  .task-parent{font-size:11px;color:var(--violet);font-weight:600;margin-top:3px;cursor:pointer}.task-parent:hover{text-decoration:underline}
+  .tt-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .tt-chip{background:var(--panel);border:1px solid var(--line-soft);color:var(--muted);border-radius:20px;padding:6px 13px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+  .tt-chip.active{background:var(--grad);color:#0A0A12;border-color:transparent}
+  .rc-list{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+  .rc{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:9px;padding:9px 12px;font-size:13px}
   @media(max-width:720px){.summary{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.wl-row{flex-wrap:wrap}.dfacts{grid-template-columns:1fr}}
 </style>
 </head>
@@ -269,8 +288,11 @@
   <nav class="secnav" id="secnav">
     <button class="secbtn active" data-section="home">⌂ Home</button>
     <button class="secbtn" data-section="investors">Investor Pipeline</button>
-    <button class="secbtn" data-section="contracts">Contracts</button>
+    <button class="secbtn" data-section="private">Private Contracts</button>
+    <button class="secbtn" data-section="gov">Government Contracts</button>
     <button class="secbtn" data-section="doctors">Doctor Leads</button>
+    <button class="secbtn" data-section="contacts">Key Contacts</button>
+    <button class="secbtn" data-section="tasks">Task Tracker</button>
   </nav>
 
   <div id="homeView"></div>
@@ -343,6 +365,29 @@
     <div class="field cond hidden" id="cond-wishround"><label>Wish list target</label><select id="f-wishround">
       <option value="ff">Friends &amp; Family prospect</option><option value="angel">Angel / Institutional prospect</option></select></div>
     <div class="field cond hidden" id="cond-contract"><label>Contract terms (optional)</label><textarea id="f-contract" placeholder="Tentative terms — add as they develop"></textarea></div>
+    <div class="cond hidden" id="cond-gov">
+      <div class="grid2">
+        <div class="field"><label>Acquisition path</label><select id="f-acqpath"><option value="">— Select —</option><option value="sole_source">Sole source</option><option value="prime">Prime</option><option value="subcontractor">Subcontractor</option></select></div>
+        <div class="field hidden" id="fld-acqunder"><label>Sub under</label><select id="f-acqunder"></select></div>
+      </div>
+      <div class="field hidden" id="fld-acqunder-other"><label>New prime</label><input id="f-acqunder-other" placeholder="Name the prime"></div>
+      <div class="field"><label>Process stage</label><select id="f-govstage"></select></div>
+      <div class="field"><label>Contracting Officer (name)</label><input id="f-co" placeholder="Primary contact / CO"></div>
+      <div class="field"><label>Need a lobbyist intro?</label><select id="f-lobneeded"><option value="no">No</option><option value="yes">Yes</option></select></div>
+      <div class="cond hidden" id="fld-lobbyist">
+        <div class="grid2">
+          <div class="field"><label>Lobbyist</label><select id="f-lobname"></select></div>
+          <div class="field"><label>Our relationship owner</label><select id="f-lobowner"></select></div>
+        </div>
+        <div class="field"><label>Intro provided by</label><input id="f-lobintro" placeholder="Who connected us"></div>
+      </div>
+    </div>
+    <div class="cond hidden" id="cond-keycontact">
+      <div class="grid2">
+        <div class="field"><label>Category</label><select id="f-kccat"><option value="">— Select —</option></select></div>
+        <div class="field"><label>Mobile</label><input id="f-kcmobile" placeholder="Cell"></div>
+      </div>
+    </div>
     <div class="field"><label>Summary note (optional)</label><textarea id="f-notes" placeholder="One-line status — the running log lives on the card detail"></textarea></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="cancelBtn">Cancel</button><button class="btn btn-primary" id="saveBtn">Save contact</button></div>
   </div>
@@ -362,12 +407,18 @@ const SB_URL='https://qfowruxljtfruilkoocj.supabase.co';
 const SB_KEY='sb_publishable_uGRWkxBitttS3WcIT6xfXw_2WoalsCE';
 const $=id=>document.getElementById(id);
 
-let sb=null, data=[], currentView='ff', currentSection='home', doctorTier='all';
+let sb=null, data=[], currentView='ff', currentSection='home', doctorTier='all', roster=[];
 const BASE_SPECIALTIES=['Upper Cervical Specialist','Neurooptometry','Airway Dentistry','Dentistry','Neuropsychiatry'];
 const KNOWN_SOFTWARE=['Jane App','ChiroTouch','Platinum','ChiroHD'];
+const KEYCONTACT_CATS=['Lobbyist','Congressional','Senator','Representative','Advisor','Investor','Government','Other'];
+const ACQ_LABEL={sole_source:'Sole source',prime:'Prime',subcontractor:'Subcontractor'};
+const GOV_STAGES=[['identified','Identified'],['champion','Champion engaged'],['co','Contracting Officer engaged'],['strategy','Acquisition strategy set'],['solicitation','Solicitation (RFI/RFP)'],['proposal','Proposal submitted'],['awarded','Awarded'],['lost','Lost / On hold']];
+const GOV_STAGE_LABEL=Object.fromEntries(GOV_STAGES);
+const PASSED_STAGES=['passed','revisit'];
+const isPassed=d=>PASSED_STAGES.includes(d.stage);
 const TIER_LABEL={committed:'Committed',interested:'Interested',needs_info:'Needs more information'};
-function sectionForView(v){return v==='contract'?'contracts':(v==='doctor'?'doctors':'investors');}
-const STAGES=[{v:'contacted',label:'Contacted'},{v:'interested',label:'Interested'},{v:'soft_circled',label:'Soft-circled'},{v:'committed',label:'Committed'},{v:'passed',label:'Passed'}];
+function sectionForView(v){return ({contract:'private',govcontract:'gov',doctor:'doctors',keycontact:'contacts'})[v]||'investors';}
+const STAGES=[{v:'contacted',label:'Contacted'},{v:'interested',label:'Interested'},{v:'soft_circled',label:'Soft-circled'},{v:'committed',label:'Committed'},{v:'revisit',label:'Passed — revisit later'},{v:'passed',label:'Passed — not interested'}];
 const stageLabel=v=>{const s=STAGES.find(x=>x.v===v);return s?s.label:''};
 const money=v=>{if(v===''||v==null)return '';const n=Number(v);return isNaN(n)?'':'$'+n.toLocaleString('en-US')};
 const numify=v=>{const s=String(v==null?'':v).replace(/[^0-9.]/g,'');return s===''?null:Number(s)};
@@ -409,12 +460,16 @@ $('password')&&$('password').addEventListener('keydown',e=>{if(e.key==='Enter')d
 
 /* ---------- data (supabase-js, uses the signed-in session token) ---------- */
 async function apiGet(){const {data:rows,error}=await sb.from('investors').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true});if(error)throw error;return rows||[];}
-function recToRow(r){return {view:r.view,name:r.name,org:r.org,primary_contact:r.primary_contact,email:r.email,phone:r.phone,address:r.address,round:r.round,structure:r.structure,amount:r.amount,cap:r.cap,pct:r.pct,discount:r.discount,wishround:r.wishround,stage:r.stage,notes:r.notes,contract_terms:r.contract_terms,practice_name:r.practice_name,specialty:r.specialty,tier:r.tier,mobile:r.mobile,office_phone:r.office_phone,num_doctors:r.num_doctors,current_software:r.current_software,sort_order:r.sort_order};}
+function recToRow(r){return {view:r.view,name:r.name,org:r.org,primary_contact:r.primary_contact,email:r.email,phone:r.phone,address:r.address,round:r.round,structure:r.structure,amount:r.amount,cap:r.cap,pct:r.pct,discount:r.discount,wishround:r.wishround,stage:r.stage,notes:r.notes,contract_terms:r.contract_terms,practice_name:r.practice_name,specialty:r.specialty,tier:r.tier,mobile:r.mobile,office_phone:r.office_phone,num_doctors:r.num_doctors,current_software:r.current_software,acq_path:r.acq_path,acq_under:r.acq_under,gov_stage:r.gov_stage,lobbyist_needed:r.lobbyist_needed,lobbyist_name:r.lobbyist_name,lobbyist_intro_by:r.lobbyist_intro_by,lobbyist_owner:r.lobbyist_owner,category:r.category,sort_order:r.sort_order};}
 
+async function rosterLoad(){try{const {data:rows,error}=await sb.from('roster').select('name').order('name',{ascending:true});if(error)throw error;return (rows||[]).map(r=>r.name);}catch(e){return [];}}
+async function allTasksLoad(){try{const {data:rows,error}=await sb.from('tasks').select('*').order('done',{ascending:true}).order('due_date',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false});if(error)throw error;return rows||[];}catch(e){return [];}}
 async function load(){
   $('content').innerHTML='<div class="empty"><div class="big"><span class="spin"></span>Loading contacts…</div></div>';
   try{ data=await apiGet(); }
   catch(e){ data=[]; $('content').innerHTML='<div class="empty"><div class="big" style="color:var(--warn)">Couldn’t load data</div>'+esc(e.message||e)+'</div>'; return; }
+  try{ const rl=await rosterLoad(); if(rl.length)roster=rl; }catch(e){}
+  try{ window.allTasks=await allTasksLoad(); }catch(e){ window.allTasks=[]; }
   render();
   const m=(location.hash||'').match(/c=([0-9a-fA-F-]{36})/);
   if(m){const t=data.find(x=>x.id===m[1]);if(t){setSection(sectionForView(t.view));if(sectionForView(t.view)==='investors')currentView=t.view;render();openDetail(m[1]);}}
@@ -423,9 +478,11 @@ async function load(){
 /* ---------- render (section router) ---------- */
 function setSection(s){
   currentSection=s;
-  if(s==='investors'&&!['ff','angel','wish'].includes(currentView))currentView='ff';
-  if(s==='contracts')currentView='contract';
+  if(s==='investors'&&!['ff','angel','wish','passed'].includes(currentView))currentView='ff';
+  if(s==='private')currentView='contract';
+  if(s==='gov')currentView='govcontract';
   if(s==='doctors')currentView='doctor';
+  if(s==='contacts')currentView='keycontact';
   render();
 }
 window.go=setSection;
@@ -434,17 +491,22 @@ function render(){
   const home=$('homeView'),dash=$('dashView');
   if(currentSection==='home'){home.style.display='block';dash.style.display='none';$('addBtn').classList.add('hidden');$('exportBtn').classList.add('hidden');renderHome();return;}
   home.style.display='none';dash.style.display='block';
-  $('addBtn').classList.remove('hidden');$('exportBtn').classList.remove('hidden');
+  $('addBtn').classList.toggle('hidden',currentSection==='tasks');$('exportBtn').classList.remove('hidden');
   renderTabs();
-  if(currentSection==='contracts')renderContracts();
+  if(currentSection==='private')renderContracts();
+  else if(currentSection==='gov')renderGov();
   else if(currentSection==='doctors')renderDoctors();
+  else if(currentSection==='contacts')renderKeyContacts();
+  else if(currentSection==='tasks')renderTasks();
   else renderInvestors();
 }
 function renderTabs(){
   const el=$('tabs');
   if(currentSection==='investors'){
-    const tabs=[['ff','Friends &amp; Family'],['angel','Angel / Institutional'],['wish','Wish List']];
-    el.innerHTML=tabs.map(t=>`<button class="tab ${currentView===t[0]?'active':''}" data-view="${t[0]}">${t[1]} <span class="count">${data.filter(d=>d.view===t[0]).length}</span></button>`).join('');
+    const active=v=>data.filter(d=>d.view===v&&!isPassed(d)).length;
+    const passedN=data.filter(d=>['ff','angel','wish'].includes(d.view)&&isPassed(d)).length;
+    const tabs=[['ff','Friends &amp; Family',active('ff')],['angel','Angel / Institutional',active('angel')],['wish','Wish List',active('wish')],['passed','Passed',passedN]];
+    el.innerHTML=tabs.map(t=>`<button class="tab ${currentView===t[0]?'active':''}" data-view="${t[0]}">${t[1]} <span class="count">${t[2]}</span></button>`).join('');
   }else if(currentSection==='doctors'){
     const docs=data.filter(d=>d.view==='doctor');
     const tabs=[['all','All',docs.length],['committed','Committed',docs.filter(d=>d.tier==='committed').length],['interested','Interested',docs.filter(d=>d.tier==='interested').length],['needs_info','Needs info',docs.filter(d=>d.tier==='needs_info').length]];
@@ -452,27 +514,77 @@ function renderTabs(){
   }else el.innerHTML='';
 }
 function renderInvestors(){
-  $('summary').style.display='grid';$('fundbar').style.display='block';$('funnel').style.display='flex';
-  const ff=data.filter(d=>d.view==='ff'),ang=data.filter(d=>d.view==='angel'),wish=data.filter(d=>d.view==='wish');
+  $('summary').style.display='grid';$('fundbar').style.display=currentView==='passed'?'none':'block';$('funnel').style.display=currentView==='passed'?'none':'flex';
+  const ff=data.filter(d=>d.view==='ff'&&!isPassed(d)),ang=data.filter(d=>d.view==='angel'&&!isPassed(d)),wish=data.filter(d=>d.view==='wish'&&!isPassed(d));
   const sum=a=>a.reduce((x,d)=>x+(Number(d.amount)||0),0);const ffT=sum(ff),angT=sum(ang);
   $('summary').innerHTML=`
     <div class="stat"><div class="k">F&amp;F Leads</div><div class="v">${ff.length}</div><div class="cap">${money(ffT)||'$0'} in play</div></div>
     <div class="stat"><div class="k">Angel / Inst.</div><div class="v">${ang.length}</div><div class="cap">${money(angT)||'$0'} in play</div></div>
     <div class="stat"><div class="k">Wish List</div><div class="v">${wish.length}</div><div class="cap">Target prospects</div></div>
     <div class="stat"><div class="k">Combined Pipeline</div><div class="v grad">${money(ffT+angT)||'$0'}</div><div class="cap">Considered, not committed</div></div>`;
-  const titles={ff:['Friends &amp; Family','Active leads for the friends-and-family raise.'],angel:['Angel / Institutional','Institutional groups and angels in conversation.'],wish:['Wish List','Target prospects to reach out to.']};
+  const titles={ff:['Friends &amp; Family','Active leads for the friends-and-family raise.'],angel:['Angel / Institutional','Institutional groups and angels in conversation.'],wish:['Wish List','Target prospects to reach out to.'],passed:['Passed Opportunities','Kept warm — set a card back to an active stage to revive it.']};
   if(!titles[currentView])currentView='ff';
   $('panelTitle').innerHTML=titles[currentView][0];$('panelDesc').innerHTML=titles[currentView][1];
   renderFunnel();renderFundbar();
-  const box=$('content'),list=data.filter(d=>d.view===currentView);
+  const box=$('content');
+  if(currentView==='passed'){const list=data.filter(d=>['ff','angel','wish'].includes(d.view)&&isPassed(d));box.innerHTML=`<div class="cards">${list.length?list.map(card).join(''):emptyBlock()}</div>`;return;}
+  const list=data.filter(d=>d.view===currentView&&!isPassed(d));
   if(currentView==='wish'){box.innerHTML=renderWish(list);return;}
   box.innerHTML=`<div class="cards">${list.length?list.map(card).join(''):emptyBlock()}</div>`;
 }
 function renderContracts(){
   $('summary').style.display='none';$('fundbar').style.display='none';$('funnel').style.display='none';
-  $('panelTitle').innerHTML='Contracts';$('panelDesc').innerHTML='Organizations and deals in contracting.';
+  $('panelTitle').innerHTML='Private Contracts';$('panelDesc').innerHTML='Commercial organizations and deals in contracting.';
   const list=data.filter(d=>d.view==='contract');
   $('content').innerHTML=`<div class="cards">${list.length?list.map(card).join(''):emptyBlock()}</div>`;
+}
+function renderGov(){
+  $('summary').style.display='grid';$('fundbar').style.display='none';$('funnel').style.display='none';
+  const gov=data.filter(d=>d.view==='govcontract');const st=k=>gov.filter(d=>d.gov_stage===k).length;
+  $('summary').innerHTML=`
+    <div class="stat"><div class="k">Opportunities</div><div class="v">${gov.length}</div><div class="cap">government</div></div>
+    <div class="stat"><div class="k">Awarded</div><div class="v">${st('awarded')}</div><div class="cap">won</div></div>
+    <div class="stat"><div class="k">In Solicitation</div><div class="v">${st('solicitation')+st('proposal')}</div><div class="cap">active</div></div>
+    <div class="stat"><div class="k">Sub / Teaming</div><div class="v">${gov.filter(d=>d.acq_path==='subcontractor').length}</div><div class="cap">under a prime</div></div>`;
+  $('panelTitle').innerHTML='Government Contracts';$('panelDesc').innerHTML='Agencies, acquisition strategy, and the path to award.';
+  $('content').innerHTML=`<div class="cards">${gov.length?gov.map(govCard).join(''):emptyBlock()}</div>`;
+}
+function govCard(d){
+  const stage=d.gov_stage?GOV_STAGE_LABEL[d.gov_stage]:'';
+  const path=d.acq_path?ACQ_LABEL[d.acq_path]:'';
+  const pathPill=path?`<span class="pill ${d.acq_path==='subcontractor'?'solo':(d.acq_path==='sole_source'?'ff':'angel')}">${path}${d.acq_path==='subcontractor'&&d.acq_under?(' · '+esc(d.acq_under)):''}</span>`:'';
+  const co=(d.primary_contact||d.email||d.phone)?`<div class="contact-line">CO: ${[d.primary_contact,d.email,d.phone].filter(Boolean).map(esc).join(' · ')}</div>`:'';
+  const lob=d.lobbyist_needed?`<div class="contact-line">Lobbyist: ${esc(d.lobbyist_name||'TBD')}${d.lobbyist_owner?(' · owner '+esc(d.lobbyist_owner)):''}</div>`:'';
+  const stageRow=stage?`<div class="amt-row"><span class="amt-label">Stage</span> <span class="amt" style="font-size:14px">${esc(stage)}</span></div>`:'';
+  const notes=d.notes?`<div class="contact-line" style="margin-top:12px;color:var(--muted)">${esc(d.notes)}</div>`:'';
+  return `<div class="card" onclick="openDetail('${d.id}')">
+    <div class="row1"><div style="min-width:0"><div class="name">${esc(d.name)}</div>${co}${lob}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${pathPill}</div></div>
+    ${stageRow}${notes}${actionsHtml(d)}</div>`;
+}
+function renderKeyContacts(){
+  $('summary').style.display='none';$('fundbar').style.display='none';$('funnel').style.display='flex';
+  const kc=data.filter(d=>d.view==='keycontact');
+  const byCat={};kc.forEach(d=>{const c=d.category||'Other';byCat[c]=(byCat[c]||0)+1;});
+  $('funnel').innerHTML=Object.entries(byCat).map(([c,n])=>`<div class="fchip"><span class="dot" style="background:var(--violet)"></span>${esc(c)} <span class="fc">${n}</span></div>`).join('');
+  $('panelTitle').innerHTML='Key Contacts';$('panelDesc').innerHTML='People we know or need to know — a central rolodex.';
+  $('content').innerHTML=`<div class="cards">${kc.length?kc.map(keyContactCard).join(''):emptyBlock()}</div>`;
+}
+function keyContactCard(d){
+  const cat=d.category?`<span class="pill soft">${esc(d.category)}</span>`:'';
+  const org=d.org?`<div class="org">${esc(d.org)}</div>`:'';
+  const lines=[];if(d.mobile)lines.push('Mobile: '+esc(d.mobile));if(d.phone)lines.push('Phone: '+esc(d.phone));if(d.email)lines.push(esc(d.email));
+  const contactLine=lines.length?`<div class="contact-line">${lines.join(' · ')}</div>`:'';
+  const notes=d.notes?`<div class="contact-line" style="margin-top:12px;color:var(--muted)">${esc(d.notes)}</div>`:'';
+  return `<div class="card" onclick="openDetail('${d.id}')">
+    <div class="row1"><div style="min-width:0"><div class="name">${esc(d.name)}</div>${org}${contactLine}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${cat}</div></div>
+    ${notes}${actionsHtml(d)}</div>`;
+}
+function renderTasks(){
+  $('summary').style.display='none';$('fundbar').style.display='none';$('funnel').style.display='none';
+  $('panelTitle').innerHTML='Task Tracker';$('panelDesc').innerHTML='Every assigned task across VitalID OS.';
+  $('content').innerHTML=taskTrackerHtml();wireTaskTracker();
 }
 function renderDoctors(){
   $('summary').style.display='grid';$('fundbar').style.display='none';$('funnel').style.display='flex';
@@ -506,28 +618,36 @@ function doctorCard(d){
 function renderHome(){
   const inv=data.filter(d=>['ff','angel','wish'].includes(d.view)).length;
   const con=data.filter(d=>d.view==='contract').length;
+  const gov=data.filter(d=>d.view==='govcontract').length;
   const doc=data.filter(d=>d.view==='doctor').length;
+  const kc=data.filter(d=>d.view==='keycontact').length;
+  const openTasks=(window.allTasks||[]).filter(t=>!t.done).length;
   const amt=d=>Number(d.amount)||0;
   const raised=data.filter(d=>(d.view==='ff'||d.view==='angel')&&d.stage==='committed').reduce((a,d)=>a+amt(d),0);
   $('homeView').innerHTML=`
-    <div class="home-hero"><h2>VitalID OS</h2><p>Your command center — capital, contracts, and clinic sales in one place. Pick a workspace.</p></div>
+    <div class="home-hero"><h2>VitalID OS</h2><p>Your command center — capital, contracts, clinic sales, key relationships, and tasks in one place.</p></div>
     <div class="home-cards">
-      <div class="home-card" onclick="go('investors')"><div class="hc-go">→</div><div class="hc-ico">◉</div><h3>Investor Pipeline</h3><div class="hc-desc">Friends &amp; Family, Angel/Institutional, and wish-list targets, with the fundraise progress bar toward $1.5M.</div><div class="hc-stat"><span class="hc-num grad">${money(raised)||'$0'}</span><span class="hc-lbl">committed · ${inv} leads</span></div></div>
-      <div class="home-card" onclick="go('contracts')"><div class="hc-go">→</div><div class="hc-ico">▦</div><h3>Contracts</h3><div class="hc-desc">Organizations and deals in contracting — terms, running notes, and documents.</div><div class="hc-stat"><span class="hc-num">${con}</span><span class="hc-lbl">in contracting</span></div></div>
+      <div class="home-card" onclick="go('investors')"><div class="hc-go">→</div><div class="hc-ico">◉</div><h3>Investor Pipeline</h3><div class="hc-desc">Friends &amp; Family, Angel/Institutional, and wish-list targets, with the fundraise bar toward $1.5M.</div><div class="hc-stat"><span class="hc-num grad">${money(raised)||'$0'}</span><span class="hc-lbl">committed · ${inv} leads</span></div></div>
+      <div class="home-card" onclick="go('private')"><div class="hc-go">→</div><div class="hc-ico">▦</div><h3>Private Contracts</h3><div class="hc-desc">Commercial deals in contracting — terms, notes, documents, and tasks.</div><div class="hc-stat"><span class="hc-num">${con}</span><span class="hc-lbl">in contracting</span></div></div>
+      <div class="home-card" onclick="go('gov')"><div class="hc-go">→</div><div class="hc-ico">★</div><h3>Government Contracts</h3><div class="hc-desc">Agencies, acquisition path, contracting officers, lobbyist paths, and paperwork tasks.</div><div class="hc-stat"><span class="hc-num">${gov}</span><span class="hc-lbl">opportunities</span></div></div>
       <div class="home-card" onclick="go('doctors')"><div class="hc-go">→</div><div class="hc-ico">✚</div><h3>Doctor Leads</h3><div class="hc-desc">Clinics ready to switch to VitalID at launch — by tier, specialty, and current software.</div><div class="hc-stat"><span class="hc-num">${doc}</span><span class="hc-lbl">interested clinics</span></div></div>
+      <div class="home-card" onclick="go('contacts')"><div class="hc-go">→</div><div class="hc-ico">◍</div><h3>Key Contacts</h3><div class="hc-desc">Your rolodex — lobbyists, congressional, advisors, investors, and people to know.</div><div class="hc-stat"><span class="hc-num">${kc}</span><span class="hc-lbl">contacts</span></div></div>
+      <div class="home-card" onclick="go('tasks')"><div class="hc-go">→</div><div class="hc-ico">✓</div><h3>Task Tracker</h3><div class="hc-desc">Every assigned task across the whole system — who owns it, when it's due, what's done.</div><div class="hc-stat"><span class="hc-num">${openTasks}</span><span class="hc-lbl">open tasks</span></div></div>
     </div>`;
 }
 function renderFunnel(){
-  const list=data.filter(d=>d.view===currentView);const counts={};STAGES.forEach(s=>counts[s.v]=0);let unset=0;
+  const list=data.filter(d=>d.view===currentView&&!isPassed(d));
+  const active=STAGES.filter(s=>!PASSED_STAGES.includes(s.v));
+  const counts={};active.forEach(s=>counts[s.v]=0);let unset=0;
   list.forEach(d=>{if(d.stage&&counts[d.stage]!=null)counts[d.stage]++;else unset++;});
-  const chips=STAGES.map(s=>`<div class="fchip"><span class="dot ${s.v}"></span>${s.label} <span class="fc">${counts[s.v]}</span></div>`).join('');
+  const chips=active.map(s=>`<div class="fchip"><span class="dot ${s.v}"></span>${s.label} <span class="fc">${counts[s.v]}</span></div>`).join('');
   $('funnel').innerHTML=chips+(unset?`<div class="fchip"><span class="dot none"></span>Unset <span class="fc">${unset}</span></div>`:'');
 }
 function renderFundbar(){
   const el=$('fundbar');if(!el)return;
   const GOAL=1500000, FF_GOAL=300000, ANG_GOAL=1200000;
   const amt=d=>Number(d.amount)||0;
-  const ff=data.filter(d=>d.view==='ff'), ang=data.filter(d=>d.view==='angel');
+  const ff=data.filter(d=>d.view==='ff'&&!isPassed(d)), ang=data.filter(d=>d.view==='angel'&&!isPassed(d));
   const ffCommit=ff.filter(d=>d.stage==='committed').reduce((a,d)=>a+amt(d),0);
   const angCommit=ang.filter(d=>d.stage==='committed').reduce((a,d)=>a+amt(d),0);
   const raised=ffCommit+angCommit;
@@ -629,25 +749,58 @@ function openModal(view,rec){
   $('f-software').value=sw?(swKnown?sw:'__other'):'';
   $('fld-software-other').classList.toggle('hidden',$('f-software').value!=='__other');
   $('f-software-other').value=(!swKnown&&sw)?sw:'';
+  /* gov contract */
+  populateGovUnder(rec?(rec.acq_under||''):'');
+  $('f-govstage').innerHTML='<option value="">— Set stage —</option>'+GOV_STAGES.map(s=>`<option value="${s[0]}">${s[1]}</option>`).join('');
+  populateLobbyists();populateOwners();
+  $('f-acqpath').value=rec?(rec.acq_path||''):'';
+  $('f-govstage').value=rec?(rec.gov_stage||''):'';
+  $('f-co').value=(rec&&view==='govcontract')?(rec.primary_contact||''):'';
+  $('f-lobneeded').value=(rec&&rec.lobbyist_needed)?'yes':'no';
+  $('f-lobname').value=rec?(rec.lobbyist_name||''):'';
+  $('f-lobowner').value=rec?(rec.lobbyist_owner||''):'';
+  $('f-lobintro').value=rec?(rec.lobbyist_intro_by||''):'';
+  /* key contact */
+  $('f-kccat').innerHTML='<option value="">— Select —</option>'+KEYCONTACT_CATS.map(c=>`<option ${(rec&&rec.category===c)?'selected':''}>${esc(c)}</option>`).join('');
+  $('f-kcmobile').value=(rec&&view==='keycontact')?(rec.mobile||''):'';
   toggleRoundFields();$('overlay').classList.add('show');
 }
+function populateGovUnder(current){
+  const sel=$('f-acqunder');const set=new Set(['Rise8']);
+  data.forEach(d=>{if(d.view==='govcontract'&&d.acq_under)set.add(d.acq_under);});
+  const opts=[...set];const known=opts.includes(current);
+  sel.innerHTML=opts.map(o=>`<option ${o===current?'selected':''}>${esc(o)}</option>`).join('')+'<option value="__other">Other…</option>';
+  sel.value=current?(known?current:'__other'):(opts[0]||'');
+  $('fld-acqunder-other').classList.toggle('hidden',sel.value!=='__other');
+  $('f-acqunder-other').value=(!known&&current)?current:'';
+}
+function populateLobbyists(){const names=data.filter(d=>d.view==='keycontact'&&d.category==='Lobbyist').map(d=>d.name);$('f-lobname').innerHTML='<option value="">— Select —</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('')+'<option value="__na">Other / N/A</option>';}
+function populateOwners(){$('f-lobowner').innerHTML='<option value="">— Select —</option>'+roster.map(n=>`<option>${esc(n)}</option>`).join('');}
 function toggleRoundFields(){
-  const view=$('f-view').value;const isWish=view==='wish',isContract=view==='contract',isDoctor=view==='doctor';const round=$('f-round').value;
-  $('grp-round').classList.toggle('hidden',isContract||isDoctor);
-  $('grp-invest1').classList.toggle('hidden',isContract||isDoctor);
-  $('grp-invest2').classList.toggle('hidden',isContract||isDoctor);
-  $('cond-structure').classList.toggle('hidden',isWish||isContract||isDoctor||round!=='ff');
+  const view=$('f-view').value;const isWish=view==='wish',isContract=view==='contract',isDoctor=view==='doctor',isGov=view==='govcontract',isKc=view==='keycontact';const round=$('f-round').value;
+  const hideInvest=isContract||isDoctor||isGov||isKc;
+  $('grp-round').classList.toggle('hidden',hideInvest);
+  $('grp-invest1').classList.toggle('hidden',hideInvest);
+  $('grp-invest2').classList.toggle('hidden',hideInvest);
+  $('cond-structure').classList.toggle('hidden',isWish||hideInvest||round!=='ff');
   $('cond-contract').classList.toggle('hidden',!isContract);
   $('cond-doctor').classList.toggle('hidden',!isDoctor);
+  $('cond-gov').classList.toggle('hidden',!isGov);
+  $('cond-keycontact').classList.toggle('hidden',!isKc);
   $('cond-wishround').classList.toggle('hidden',!isWish);
-  $('grp-orgprimary').classList.toggle('hidden',isDoctor);
+  $('grp-orgprimary').classList.toggle('hidden',isDoctor||isGov);
   $('fld-phone').classList.toggle('hidden',isDoctor);
-  $('lbl-name').textContent=isDoctor?'Doctor name':(isContract?'Organization (or name)':'Name');
+  $('fld-acqunder').classList.toggle('hidden',!(isGov&&$('f-acqpath').value==='subcontractor'));
+  $('fld-lobbyist').classList.toggle('hidden',!(isGov&&$('f-lobneeded').value==='yes'));
+  $('lbl-name').textContent=isDoctor?'Doctor name':(isContract?'Organization (or name)':(isGov?'Agency':(isKc?'Contact name':'Name')));
   $('lbl-address').textContent=isDoctor?'Office address':'Address';
-  $('f-name').placeholder=isDoctor?'e.g. Dr. Jane Smith':(isContract?'e.g. Acme Health Systems':'e.g. Jim LaBate');
+  $('f-name').placeholder=isGov?'e.g. Department of Veterans Affairs':(isDoctor?'e.g. Dr. Jane Smith':(isContract?'e.g. Acme Health Systems':(isKc?'e.g. Van Hipp':'e.g. Jim LaBate')));
 }
 $('f-specialty').addEventListener('change',()=>$('fld-specialty-other').classList.toggle('hidden',$('f-specialty').value!=='__other'));
 $('f-software').addEventListener('change',()=>$('fld-software-other').classList.toggle('hidden',$('f-software').value!=='__other'));
+$('f-acqpath').addEventListener('change',()=>$('fld-acqunder').classList.toggle('hidden',$('f-acqpath').value!=='subcontractor'));
+$('f-acqunder').addEventListener('change',()=>$('fld-acqunder-other').classList.toggle('hidden',$('f-acqunder').value!=='__other'));
+$('f-lobneeded').addEventListener('change',()=>$('fld-lobbyist').classList.toggle('hidden',$('f-lobneeded').value!=='yes'));
 $('f-round').addEventListener('change',toggleRoundFields);
 function closeModal(){$('overlay').classList.remove('show')}
 $('addBtn').addEventListener('click',()=>openModal(currentView,null));
@@ -683,6 +836,29 @@ function detailInfoHtml(d){
       <div class="dmeta"><button class="mini" onclick="edit('${d.id}');closeDetail();">Edit details</button></div>
       <div class="dfacts">${facts}${sumNote}</div>`;
   }
+  if(d.view==='govcontract'){
+    const path=d.acq_path?(ACQ_LABEL[d.acq_path]+(d.acq_path==='subcontractor'&&d.acq_under?(' — under '+d.acq_under):'')):'';
+    const facts=[
+      fact('Acquisition path',path),fact('Stage',d.gov_stage?GOV_STAGE_LABEL[d.gov_stage]:''),
+      fact('Contracting Officer',d.primary_contact),fact('CO email',d.email),fact('CO phone',d.phone),fact('Address',d.address,true),
+      d.lobbyist_needed?fact('Lobbyist',d.lobbyist_name||'Needed — TBD'):'',
+      d.lobbyist_needed?fact('Intro provided by',d.lobbyist_intro_by):'',
+      d.lobbyist_needed?fact('Relationship owner',d.lobbyist_owner):'',
+    ].filter(Boolean).join('');
+    const terms=d.contract_terms?`<div class="dfact full"><div class="dl">Notes on terms</div><div class="dv terms">${esc(d.contract_terms)}</div></div>`:'';
+    const sumNote=d.notes?`<div class="dfact full"><div class="dl">Summary note</div><div class="dv terms">${esc(d.notes)}</div></div>`:'';
+    const stagePill=d.gov_stage?`<span class="pill ${d.gov_stage==='awarded'?'ff':(d.gov_stage==='lost'?'solo':'angel')}">${GOV_STAGE_LABEL[d.gov_stage]}</span>`:'<span class="pill soft">Gov contract</span>';
+    return `<div class="dh"><div><div class="dname">${esc(d.name)}</div><div class="dorg">${path?esc(path):'Government contract'}</div></div><div>${stagePill}</div></div>
+      <div class="dmeta"><button class="mini" onclick="edit('${d.id}');closeDetail();">Edit details</button></div>
+      <div class="dfacts">${facts}${terms}${sumNote}</div>`;
+  }
+  if(d.view==='keycontact'){
+    const facts=[fact('Category',d.category),fact('Organization / title',d.org),fact('Email',d.email),fact('Phone',d.phone),fact('Mobile',d.mobile),fact('Address',d.address,true)].filter(Boolean).join('');
+    const sumNote=d.notes?`<div class="dfact full"><div class="dl">Notes</div><div class="dv terms">${esc(d.notes)}</div></div>`:'';
+    return `<div class="dh"><div><div class="dname">${esc(d.name)}</div>${d.org?`<div class="dorg">${esc(d.org)}</div>`:''}</div><div>${d.category?`<span class="pill soft">${esc(d.category)}</span>`:''}</div></div>
+      <div class="dmeta"><button class="mini" onclick="edit('${d.id}');closeDetail();">Edit details</button></div>
+      <div class="dfacts">${facts}${sumNote}</div>`;
+  }
   const viewLabel={ff:'Friends & Family',angel:'Angel / Institutional',wish:'Wish List',contract:'Contract'}[d.view]||d.view;
   const facts=[
     fact('List',viewLabel),
@@ -715,13 +891,19 @@ function documentsSectionHtml(){
 }
 async function openDetail(id){
   const d=data.find(x=>x.id===id);if(!d)return;
-  detailId=id;detailNotes=[];detailDocs=[];
-  $('detailBody').innerHTML=detailInfoHtml(d)+documentsSectionHtml()+notesSectionHtml();
+  detailId=id;detailNotes=[];detailDocs=[];detailTasks=[];detailContacts=[];
+  const isGov=d.view==='govcontract';
+  $('detailBody').innerHTML=detailInfoHtml(d)+(isGov?contactsSectionHtml():'')+tasksSectionHtml()+documentsSectionHtml()+notesSectionHtml();
   $('detailOverlay').classList.add('show');
   $('noteAddBtn').addEventListener('click',submitNote);
   $('docUploadBtn').addEventListener('click',doUpload);
+  $('taskAddBtn').addEventListener('click',submitTask);
+  if(isGov)$('rcAddBtn').addEventListener('click',submitContact);
   $('notesList').innerHTML='<div class="note-empty"><span class="spin"></span> loading…</div>';
   $('docsList').innerHTML='<div class="note-empty">loading…</div>';
+  $('tasksList').innerHTML='<div class="note-empty">loading…</div>';
+  try{ detailTasks=await tasksLoad(id); renderDetailTasks(); }catch(e){ $('tasksList').innerHTML='<div class="note-empty">Could not load tasks.</div>'; }
+  if(isGov){ try{ detailContacts=await rcLoad(id); renderDetailContacts(); }catch(e){ $('rcList').innerHTML='<div class="note-empty">Could not load contacts.</div>'; } }
   try{ detailNotes=await notesLoad(id); renderNotes(); }catch(e){ $('notesList').innerHTML='<div class="note-empty">Could not load notes.</div>'; }
   try{ detailDocs=await docsLoad(id); renderDocs(); }catch(e){ $('docsList').innerHTML='<div class="note-empty">Could not load documents.</div>'; }
 }
@@ -801,20 +983,174 @@ window.saveNote=async(nid)=>{
   catch(e){ toast('Save failed: '+(e.message||e),true); }
 };
 
+/* ---------- roster + assignees ---------- */
+function assigneeOptions(current){
+  const opts=roster.slice();if(current&&!opts.includes(current))opts.push(current);
+  return '<option value="">— Unassigned —</option>'+opts.map(n=>`<option ${n===current?'selected':''}>${esc(n)}</option>`).join('')+'<option value="__add">+ Add person…</option>';
+}
+window.onAssigneeChange=async(sel)=>{
+  if(sel.value!=='__add')return;
+  const name=(prompt('New team member name:')||'').trim();
+  if(!name){sel.value='';return;}
+  try{ const {error}=await sb.from('roster').upsert({name},{onConflict:'name',ignoreDuplicates:true}); if(error)throw error; if(!roster.includes(name)){roster.push(name);roster.sort();} }
+  catch(e){ toast('Could not add: '+(e.message||e),true); }
+  sel.innerHTML=assigneeOptions(name);
+};
+/* ---------- tasks (supabase-js) ---------- */
+let detailTasks=[];
+async function tasksLoad(id){const {data,error}=await sb.from('tasks').select('*').eq('investor_id',id).order('done',{ascending:true}).order('due_date',{ascending:true,nullsFirst:false}).order('created_at',{ascending:false});if(error)throw error;return data||[];}
+async function taskAdd(id,title,assignee,due){const {data,error}=await sb.from('tasks').insert({investor_id:id||null,title,assignee:assignee||null,due_date:due||null}).select().single();if(error)throw error;return data;}
+async function taskToggle(tid,done){const {data,error}=await sb.from('tasks').update({done,done_at:done?new Date().toISOString():null}).eq('id',tid).select().single();if(error)throw error;return data;}
+async function taskDelete(tid){const {error}=await sb.from('tasks').delete().eq('id',tid);if(error)throw error;}
+function taskItemHtml(t){
+  const overdue=!t.done&&t.due_date&&(new Date(t.due_date)<new Date(new Date().toDateString()));
+  const due=t.due_date?`<span class="task-due ${overdue?'overdue':''}">due ${esc(t.due_date)}</span>`:'';
+  const who=t.assignee?`<span class="task-who">${esc(t.assignee)}</span>`:'<span class="task-who" style="color:var(--faint)">unassigned</span>';
+  const doneAt=t.done&&t.done_at?`<span class="task-done">done ${fmtTime(t.done_at)}</span>`:'';
+  return `<div class="task ${t.done?'is-done':''}" data-id="${t.id}">
+    <input type="checkbox" class="task-chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked)">
+    <div class="task-main"><div class="task-title">${esc(t.title)}</div><div class="task-meta">${who}${due}${doneAt}</div></div>
+    <button class="note-x" title="Delete task" onclick="removeTask('${t.id}')">&times;</button></div>`;
+}
+function tasksSectionHtml(){
+  return `<div class="notes-head">Assigned tasks</div>
+    <div class="task-add">
+      <input id="taskTitle" class="task-input" placeholder="Task…">
+      <select id="taskAssignee" class="task-sel" onchange="onAssigneeChange(this)">${assigneeOptions('')}</select>
+      <input id="taskDue" type="date" class="task-date">
+      <button class="btn btn-primary" id="taskAddBtn">Add</button>
+    </div>
+    <div class="tasks-list" id="tasksList"></div>`;
+}
+function renderDetailTasks(){
+  const box=$('tasksList');if(!box)return;
+  box.innerHTML=detailTasks.length?detailTasks.map(taskItemHtml).join(''):'<div class="note-empty">No tasks yet.</div>';
+}
+async function submitTask(){
+  const title=$('taskTitle').value.trim();if(!title){toast('Enter a task',true);return;}
+  const assignee=$('taskAssignee').value==='__add'?'':$('taskAssignee').value;const due=$('taskDue').value||null;
+  const btn=$('taskAddBtn');btn.disabled=true;
+  try{ const row=await taskAdd(detailId,title,assignee,due); if(row){detailTasks.unshift(row);window.allTasks=window.allTasks||[];window.allTasks.unshift(row);} $('taskTitle').value='';$('taskDue').value=''; renderDetailTasks(); }
+  catch(e){ toast('Could not add task: '+(e.message||e),true); }
+  btn.disabled=false;
+}
+window.toggleTask=async(tid,done)=>{
+  try{ const row=await taskToggle(tid,done);
+    const upd=arr=>{const i=(arr||[]).findIndex(t=>t.id===tid);if(i>=0&&row)arr[i]=row;};
+    upd(detailTasks);upd(window.allTasks);
+    if(currentSection==='tasks'){renderTaskFilters();renderTaskList();}else{renderDetailTasks();}
+    toast(done?'Task completed':'Task reopened');
+  }catch(e){ toast('Update failed: '+(e.message||e),true); }
+};
+window.removeTask=async(tid)=>{
+  if(!confirm('Delete this task?'))return;
+  try{ await taskDelete(tid); detailTasks=detailTasks.filter(t=>t.id!==tid); window.allTasks=(window.allTasks||[]).filter(t=>t.id!==tid);
+    if(currentSection==='tasks'){renderTaskFilters();renderTaskList();}else renderDetailTasks(); toast('Task deleted'); }
+  catch(e){ toast('Delete failed: '+(e.message||e),true); }
+};
+/* ---------- Task Tracker ---------- */
+let taskFilter={status:'open',assignee:''};
+function taskTrackerHtml(){
+  return `<div class="task-add" style="margin-bottom:14px">
+      <input id="ttTitle" class="task-input" placeholder="New standalone task…">
+      <select id="ttAssignee" class="task-sel" onchange="onAssigneeChange(this)">${assigneeOptions('')}</select>
+      <input id="ttDue" type="date" class="task-date">
+      <button class="btn btn-primary" id="ttAddBtn">Add</button>
+    </div>
+    <div class="tt-filters" id="ttFilters"></div>
+    <div class="tasks-list" id="ttList" style="max-height:none"></div>`;
+}
+function recName(id){const r=data.find(d=>d.id===id);return r?r.name:'';}
+function renderTaskList(){
+  const all=window.allTasks||[];const today=new Date(new Date().toDateString());let list=all.slice();
+  if(taskFilter.status==='open')list=list.filter(t=>!t.done);
+  else if(taskFilter.status==='done')list=list.filter(t=>t.done);
+  else if(taskFilter.status==='overdue')list=list.filter(t=>!t.done&&t.due_date&&new Date(t.due_date)<today);
+  if(taskFilter.assignee)list=list.filter(t=>t.assignee===taskFilter.assignee);
+  const box=$('ttList');if(!box)return;
+  box.innerHTML=list.length?list.map(t=>{
+    const rn=t.investor_id?recName(t.investor_id):'';
+    const parent=rn?`<div class="task-parent" onclick="event.stopPropagation();openDetail('${t.investor_id}')">${esc(rn)}</div>`:'<div class="task-parent" style="color:var(--faint)">standalone</div>';
+    const overdue=!t.done&&t.due_date&&(new Date(t.due_date)<today);
+    const due=t.due_date?`<span class="task-due ${overdue?'overdue':''}">due ${esc(t.due_date)}</span>`:'';
+    const who=t.assignee?`<span class="task-who">${esc(t.assignee)}</span>`:'<span class="task-who" style="color:var(--faint)">unassigned</span>';
+    const doneAt=t.done&&t.done_at?`<span class="task-done">done ${fmtTime(t.done_at)}</span>`:'';
+    return `<div class="task ${t.done?'is-done':''}"><input type="checkbox" class="task-chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked)">
+      <div class="task-main"><div class="task-title">${esc(t.title)}</div><div class="task-meta">${who}${due}${doneAt}</div>${parent}</div>
+      <button class="note-x" onclick="removeTask('${t.id}')">&times;</button></div>`;
+  }).join(''):'<div class="note-empty">No tasks match this filter.</div>';
+}
+function renderTaskFilters(){
+  const box=$('ttFilters');if(!box)return;const all=window.allTasks||[];const today=new Date(new Date().toDateString());
+  const open=all.filter(t=>!t.done).length,done=all.filter(t=>t.done).length,over=all.filter(t=>!t.done&&t.due_date&&new Date(t.due_date)<today).length;
+  const chips=[['open','Open',open],['overdue','Overdue',over],['done','Done',done],['all','All',all.length]];
+  const asgn=['<option value="">All people</option>'].concat(roster.map(n=>`<option ${taskFilter.assignee===n?'selected':''}>${esc(n)}</option>`)).join('');
+  box.innerHTML=chips.map(c=>`<button class="tt-chip ${taskFilter.status===c[0]?'active':''}" data-status="${c[0]}">${c[1]} <b>${c[2]}</b></button>`).join('')+`<select class="task-sel" id="ttAsgnFilter">${asgn}</select>`;
+}
+function wireTaskTracker(){
+  renderTaskFilters();renderTaskList();
+  $('ttAddBtn').addEventListener('click',async()=>{
+    const title=$('ttTitle').value.trim();if(!title){toast('Enter a task',true);return;}
+    const assignee=$('ttAssignee').value==='__add'?'':$('ttAssignee').value;const due=$('ttDue').value||null;
+    try{ const row=await taskAdd(null,title,assignee,due); if(row){window.allTasks=window.allTasks||[];window.allTasks.unshift(row);} $('ttTitle').value='';$('ttDue').value=''; renderTaskFilters();renderTaskList(); }
+    catch(e){ toast('Could not add: '+(e.message||e),true); }
+  });
+  $('ttFilters').addEventListener('click',e=>{const b=e.target.closest('.tt-chip');if(b){taskFilter.status=b.dataset.status;renderTaskFilters();renderTaskList();}});
+  $('ttFilters').addEventListener('change',e=>{if(e.target.id==='ttAsgnFilter'){taskFilter.assignee=e.target.value;renderTaskList();}});
+}
+/* ---------- additional contacts (supabase-js) ---------- */
+let detailContacts=[];
+async function rcLoad(id){const {data,error}=await sb.from('record_contacts').select('*').eq('investor_id',id).order('created_at',{ascending:true});if(error)throw error;return data||[];}
+async function rcAdd(id,c){const {data,error}=await sb.from('record_contacts').insert({investor_id:id,name:c.name,role:c.role||null,email:c.email||null,phone:c.phone||null}).select().single();if(error)throw error;return data;}
+async function rcDelete(cid){const {error}=await sb.from('record_contacts').delete().eq('id',cid);if(error)throw error;}
+function contactsSectionHtml(){
+  return `<div class="notes-head">Additional contacts</div>
+    <div class="rc-add">
+      <input id="rcName" class="task-input" placeholder="Name"><input id="rcRole" class="task-input" placeholder="Role / title">
+      <input id="rcEmail" class="task-input" placeholder="Email"><input id="rcPhone" class="task-input" placeholder="Phone">
+      <button class="btn btn-ghost" id="rcAddBtn">Add contact</button>
+    </div>
+    <div class="rc-list" id="rcList"></div>`;
+}
+function renderDetailContacts(){
+  const box=$('rcList');if(!box)return;
+  box.innerHTML=detailContacts.length?detailContacts.map(c=>`<div class="rc"><div><b>${esc(c.name)}</b>${c.role?` — ${esc(c.role)}`:''}<div class="contact-line">${[c.email,c.phone].filter(Boolean).map(esc).join(' · ')}</div></div><button class="note-x" onclick="removeContact('${c.id}')">&times;</button></div>`).join(''):'<div class="note-empty">No additional contacts.</div>';
+}
+async function submitContact(){
+  const c={name:$('rcName').value.trim(),role:$('rcRole').value.trim(),email:$('rcEmail').value.trim(),phone:$('rcPhone').value.trim()};
+  if(!c.name){toast('Enter a name',true);return;}
+  try{ const row=await rcAdd(detailId,c); if(row)detailContacts.push(row); ['rcName','rcRole','rcEmail','rcPhone'].forEach(i=>$(i).value=''); renderDetailContacts(); }
+  catch(e){ toast('Could not add: '+(e.message||e),true); }
+}
+window.removeContact=async(cid)=>{
+  if(!confirm('Remove this contact?'))return;
+  try{ await rcDelete(cid); detailContacts=detailContacts.filter(c=>c.id!==cid); renderDetailContacts(); }
+  catch(e){ toast('Delete failed: '+(e.message||e),true); }
+};
+
 $('saveBtn').addEventListener('click',async()=>{
   const name=$('f-name').value.trim();if(!name){$('f-name').focus();$('f-name').style.borderColor='var(--warn)';return;}
   const view=$('f-view').value,id=$('f-id').value;
-  const rec={view,name,org:$('f-org').value.trim(),primary_contact:$('f-primary').value.trim(),email:$('f-email').value.trim(),
+  const acqUnder=$('f-acqpath').value==='subcontractor'?($('f-acqunder').value==='__other'?$('f-acqunder-other').value.trim():$('f-acqunder').value):'';
+  const rec={view,name,org:$('f-org').value.trim(),primary_contact:(view==='govcontract'?$('f-co').value.trim():$('f-primary').value.trim()),email:$('f-email').value.trim(),
     phone:$('f-phone').value.trim(),address:$('f-address').value.trim(),round:$('f-round').value,structure:$('f-structure').value,
     amount:numify($('f-amount').value),cap:numify($('f-cap').value),pct:numify($('f-pct').value),discount:numify($('f-discount').value),
     wishround:$('f-wishround').value,stage:$('f-stage').value||null,notes:$('f-notes').value.trim(),contract_terms:$('f-contract').value.trim(),
     practice_name:$('f-practice').value.trim(),
     specialty:($('f-specialty').value==='__other'?$('f-specialty-other').value.trim():$('f-specialty').value),
     tier:$('f-tier').value,
-    mobile:$('f-mobile').value.trim(),
+    mobile:(view==='keycontact'?$('f-kcmobile').value.trim():$('f-mobile').value.trim()),
     office_phone:$('f-officephone').value.trim(),
     num_doctors:(()=>{const s=$('f-numdoc').value.replace(/[^0-9]/g,'');return s===''?null:parseInt(s,10);})(),
-    current_software:($('f-software').value==='__other'?$('f-software-other').value.trim():$('f-software').value)};
+    current_software:($('f-software').value==='__other'?$('f-software-other').value.trim():$('f-software').value),
+    acq_path:$('f-acqpath').value,
+    acq_under:acqUnder,
+    gov_stage:$('f-govstage').value,
+    lobbyist_needed:($('f-lobneeded').value==='yes'),
+    lobbyist_name:($('f-lobname').value==='__na'?'':$('f-lobname').value),
+    lobbyist_intro_by:$('f-lobintro').value.trim(),
+    lobbyist_owner:$('f-lobowner').value,
+    category:$('f-kccat').value};
   const btn=$('saveBtn');btn.disabled=true;
   try{
     if(id){const cur=data.find(d=>d.id===id)||{};const {data:row,error}=await sb.from('investors').update(recToRow({...rec,sort_order:cur.sort_order||0})).eq('id',id).select().single();
